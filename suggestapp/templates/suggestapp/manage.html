@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+{% extends "suggestapp/index.html" %}
+{% block body_block %}
+{% csrf_token %}
+<html lang="en">
+
+
+
+<body>
+
+
+
+    <div class="container">
+        {% if keywords %}
+        {% for i in keywords %}
+        <h5>You previously selected below keywords. </h5>
+        <h5>{{ i.keywords }}</h5>
+        {% endfor %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            {{ form.as_p }}
+
+            <br />
+            <input type="submit" class="regBtn" name="" value="Subscribe">
+            {% endif %}
+        </form>
+        {% if updated %}
+        <h5>{{ updated }} </h5>
+        {% endif %}
+        {% if failure %}
+        <h5>{{ failure }} </h5>
+        {% endif %}
+        <!-- {% if unsubscribed %}
+        <h1>Your email is unsubscribed</h1>
+        {% else %}
+        <h1>Are you sure to unsubscribe?</h1>
+
+        <hr /> -->
+
+        <!-- 
+        {% endif %} -->
+        <!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+        <script>
+
+
+            $(document).ready(function () {
+                $(".delete").on("click", function () {
+                    $(this).closest("li").remove();
+                });
+            });
+        </script> -->
+    </div>
+
+
+
+
+    {% endblock %}

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/static/css/mystyle.css?{% now " U" %}" />
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100&display=swap" rel="stylesheet">
+    <!-- jQuery !-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"> </script>
+    <script>
+
+
+
+    </script>
+
+
+    <header>
+        <li><a class="logo">READER</a></li>
+        <ul>
+            <li><a class="navbarLink" href="{% url 'admin:index' %}">Admin</a></li>
+
+            {# Some logic on what to display for last item#}
+
+        </ul>
+
+
+    </header>
+</head>
+
+<body>
+    {% block body_block %}
+    {# Outside of here will be extended.#}
+    <div class="container">
+        {% if failure %}
+        <h1>{{ failure }}</h1>
+        {% else %}
+        <h1>Please subscribe here !</h1>
+
+        <hr />
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <!-- {{ user_form.as_p }} -->
+            <!-- <br />
+            <label for="email">Email:</label>
+            <input type="email" class="email" name="email" required>
+            <br /> -->
+            <br />
+            <!-- <input type="checkbox" name="keywords" class="keywords" value="Artificial Intelligence">Artificial
+            Intelligence
+            <input type="checkbox" name="keywords" class="keywords" value="Networking">Networking
+            <input type="checkbox" name="keywords" class="keywords" value="Algorithms">Algorithms
+            <input type="checkbox" name="keywords" class="keywords" value="Wireless Communication">Wireless
+            Communication -->
+
+
+            <br />
+            <br />
+            <input type="submit" class="regBtn" name="" value="Subscribe">
+        </form>
+
+
+        {% endif %}
+
+
+
+    </div>
+
+
+
+
+    {% endblock %}
+
+
+
+    <!-- <nav class="footer">
+        <footer>
+            <h5>Copyright &copy Selin KOCAKUŞAK</h5>
+        </footer>
+
+
+    </nav> -->
+
+
+
+</body>
+
+
+
+</html>

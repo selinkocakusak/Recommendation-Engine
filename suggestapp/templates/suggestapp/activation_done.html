@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+{% extends "suggestapp/index.html" %}
+{% block body_block %}
+{% csrf_token %}
+<html lang="en">
+
+
+
+<body>
+    <div class="container">
+
+
+
+
+
+        {% if failure %}
+        <h3>{{ failure }}</h3>
+        {% else %}
+        <h3>Your activation is adready done.</h3>
+
+        {% endif %}
+    </div>
+
+    {% endblock %}
+
+</body>
+
+
+
+</html>

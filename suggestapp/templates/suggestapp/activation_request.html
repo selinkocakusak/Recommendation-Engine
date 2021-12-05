@@ -1,0 +1,11 @@
+{% autoescape off %}
+Hi {{ email }},
+
+Please click the following link to confirm your registration:
+
+http://{{ domain }}{% url 'suggestapp:activate' uidb64=uid token=token %}
+
+http://{{ domain }}{% url 'suggestapp:manage' uidb64=uid token=token %}
+
+http://{{ domain }}{% url 'suggestapp:unsubscribe' uidb64=uid token=token %}
+{% endautoescape %}

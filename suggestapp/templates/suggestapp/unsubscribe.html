@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% extends "suggestapp/index.html" %}
+{% block body_block %}
+{% csrf_token %}
+<html lang="en">
+
+<body>
+
+    <div class="container">
+        {% if unsubscribed %}
+        <h1>Your email is unsubscribed</h1>
+        {% endif %}
+        {% if check %}
+        <h1> {{ check }} {{ uid }}</h1>
+
+        <hr />
+        <form method="POST">
+            {% csrf_token %}
+
+            <br />
+            <input type="submit" class="regBtn" name="unsubscribe" value="Unsubscribe">
+        </form>
+
+        {% endif %}
+
+
+
+    </div>
+
+
+
+
+    {% endblock %}
+
+
+
+
+
+</body>
+
+
+
+</html>
