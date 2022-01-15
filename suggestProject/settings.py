@@ -77,13 +77,26 @@ WSGI_APPLICATION = 'suggestProject.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'suggestApp',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': 'db',
+        'PORT': '5432',
     }
 }
+
+
 # 'NAME': BASE_DIR / 'db.sqlite3',
 
 # Password validation
@@ -133,14 +146,21 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # SMTP Configuration
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_HOST_USER = 'selinkocakusak@gmail.com'
+# EMAIL_HOST_PASSWORD = 'Holmenkollen7926'
+# EMAIL_USE_TLS = True
+
+
+# SMTP Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'selinkocakusak@gmail.com'
-EMAIL_HOST_PASSWORD = 'Holmenkollen7926'
+EMAIL_HOST_USER = 'readertest10@gmail.com'
+EMAIL_HOST_PASSWORD = 'Holmen36'
 EMAIL_USE_TLS = True
-# EMAIL_HOST_PASSWORD = 'K6R93-P7NR3-6TNCJ-6SR2S-HQX8S'
-# EMAIL_USE_SSL = False
 
 
 # SMTP Configuration

@@ -26,10 +26,14 @@ body{
     margin: 2px;
     border-radius: 5px;
     padding: 5px;
+   
 }
 .deleteMe{
-    float: right;
-    background: yellow;
+    /* float: right; */
+    
+    cursor: pointer;
+    display: inline-block;
+    white-space: nowrap;
 }
 
   .container{

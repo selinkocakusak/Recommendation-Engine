@@ -10,6 +10,8 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('manage/<slug:uidb64>/<slug:token>/',
          views.manage, name='manage'),
+    path('manage/<slug:uidb64>/',
+         views.articles, name='articles'),
     path('unsubscribe/<slug:uidb64>/<slug:token>/',
          views.unsubscribe, name='unsubscribe'),
     path('sent/', views.activation_sent_view, name="activation_sent"),

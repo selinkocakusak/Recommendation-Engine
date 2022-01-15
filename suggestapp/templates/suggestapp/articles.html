@@ -1,0 +1,13 @@
+{% autoescape off %}
+
+
+
+Hi {{ email }},
+
+Please see suggested articles for you:
+
+
+http://{{ domain }}{% url 'suggestapp:manage' uidb64=uid token=token %}
+
+http://{{ domain }}{% url 'suggestapp:unsubscribe' uidb64=uid token=token %}
+{% endautoescape %}
