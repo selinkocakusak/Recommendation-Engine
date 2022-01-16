@@ -1,0 +1,65 @@
+body{
+    margin: 0 0 55px 0;
+    background:rgb(241, 255, 245); 
+    display: flex;
+   
+  }
+
+  header{
+    font-family: 'Montserrat',sans-serif;
+    position: fixed;
+    background: linear-gradient(180deg, rgb(120, 255, 154), rgb(209, 243, 190));
+    top:0;
+    left:0;
+    width:100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.5s;
+    box-shadow: 1px 3px #CCD1D1;
+  
+  }
+
+  ul li{
+    list-style: none;
+    background: grey;
+    margin: 2px;
+    border-radius: 5px;
+    padding: 5px;
+   
+}
+.deleteMe{
+    /* float: right; */
+    
+    cursor: pointer;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+  .container{
+    
+    margin-top:30px;
+    padding: 100px;
+  
+  }
+
+  .logo{
+    font-family: 'Montserrat',sans-serif;
+    position: relative;
+    font-weight: 700;
+    color: white;
+    text-decoration: none;
+    font-size: 2em;
+    letter-spacing: 2px;
+    transition: 0.5s;
+    padding: 20px 100px;
+  
+  
+  }
+  li {
+    position: relative;
+    list-style: none;
+    margin: 0 15px;
+  
+  
+  }

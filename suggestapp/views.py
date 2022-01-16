@@ -2,7 +2,7 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import render
 import re
-from .models import keyword, reader_keyword, reader
+from .models import article, keyword, reader_keyword, reader
 import hashlib
 from django.core.mail import EmailMessage
 from django.conf import settings
@@ -17,6 +17,11 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from .tokens import activation_token
 from django.utils import six
+from itertools import chain
+from django.http import JsonResponse
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 
 from .forms import readerForm
 
@@ -70,17 +75,11 @@ def activation_sent_view(request):
 
 
 def activate(request, uidb64, token):
-    # print(request)
-    # print(token)
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
         readerCheck = reader.objects.get(email=uid)
         tokenCheck = reader.objects.get(token=token)
         current_site = get_current_site(request)
-        print("current", current_site)
-        print(tokenCheck)
-        # confirmationCheck = reader.objects.filter(
-        #     email=uid).values('confirmation')
     except:
         readerCheck = None
         tokenCheck = None
@@ -90,22 +89,35 @@ def activate(request, uidb64, token):
         reader.objects.filter(email=uid).update(
             confirmation=confirmation, state=activated)
         if reader.objects.filter(state=activated):
-            print("yes")
-            message = render_to_string('suggestapp/articles.html', {
-                'email': uid,
-                'domain': current_site.domain,
-                'uid': urlsafe_base64_encode(force_bytes(uid)),
-                'token': token,
-            })
+            articles = reader_keyword.objects.filter(
+                readers=uid).values('keywords')
+            selectedKeywords = []
+            for i in articles:
+                query = keyword.objects.filter(
+                    keyword_id=i['keywords']).values('keyword_name')
+                for a in query:
+                    selectedKeywords.append(a['keyword_name'])
+            if (len(selectedKeywords)) != 0:
+                articlesSend = return_articles(selectedKeywords, uid)
+                message = render_to_string('suggestapp/articles.html', {
+                    'email': uid,
+                    'uidb64': uidb64,
+                    'domain': current_site.domain,
+                    'uid': urlsafe_base64_encode(force_bytes(uid)),
+                    'token': token,
+                    'articles': articlesSend
+                })
+                mailSend = EmailMessage(
+                    'New Articles for you!',
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [uid],
+                )
+                mailSend.fail_silently = False
+                mailSend.send()
+            else:
+                pass
 
-            mailSend = EmailMessage(
-                'New Articles for you!',
-                message,
-                settings.EMAIL_HOST_USER,
-                [uid],
-            )
-            mailSend.fail_silently = False
-            mailSend.send()
         return render(request, 'suggestapp/activation_success.html')
 
     if readerCheck is None or tokenCheck is None:
@@ -117,6 +129,16 @@ def activate(request, uidb64, token):
     #     return render(request, 'suggestapp/activation_done.html', {'failure': failure})
     else:
         return render(request, 'suggestapp/activation_done.html')
+
+
+def return_articles(selectedKeywords, uid):
+    querylist = []
+    for element in selectedKeywords:
+        query_returned = article.objects.filter(
+            term=element).values('term', 'abstract', 'title', 'no')[0:4]
+        querylist.append(query_returned)
+    returned_articles = list(chain(*querylist))
+    return returned_articles
 
 
 def unsubscribe(request, uidb64, token):
@@ -180,22 +202,57 @@ def manage(request, uidb64, token):
         return render(request, 'suggestapp/manage.html', {'failure': failure})
 
 
-def articles(request, uidb64):
-    email = force_text(urlsafe_base64_decode(uidb64))
+def article_view(request, no, uidb64):
+    articles = article.objects.filter(
+        no=no).values()
+    if request.is_ajax():
+        for elem in articles.values('term'):
+            term = elem['term']
+        for item in articles.values('vectorized'):
+            liked = item['vectorized']
+        compared = return_vectorized(liked, term)
+        context = {
 
-    message = render_to_string('suggestapp/activation_request.html', {
-        'email': email,
-        'domain': current_site.domain,
-        'uid': urlsafe_base64_encode(force_bytes(email)),
-    })
+        }
+        return JsonResponse(data=context)
+    return render(request, 'suggestapp/article_view.html', {'articles': articles})
 
-    mailSend = EmailMessage(
-        'New Articles for you!',
-        message,
-        settings.EMAIL_HOST_USER,
-        [email],
-    )
-    mailSend.fail_silently = False
-    mailSend.send()
-    return redirect('suggestapp:activation_sent')
-    return render(request, 'suggestapp/articles.html', {'failure': failure})
+
+def return_vectorized(liked, term):
+    other_articles = []
+    for elem in article.objects.filter(term=term).values('vectorized'):
+        other_articles.append(elem['vectorized'])
+    vectorizer = TfidfVectorizer()
+    vectorA = vectorizer.fit_transform([liked])
+    result = {}
+    for item in other_articles:
+        vectorB = vectorizer.transform([item])
+        similar = cosine_similarity(vectorA, vectorB)
+        clear = list(map(float, similar))
+        similar = clear[0]
+        result[item] = similar
+    result = dict((k, v) for k, v in result.items()
+                  if v >= 0.5)
+    if len(result) > 3:
+        threeitems = {A: N for (A, N) in [x for x in result.items()][:3]}
+        getDoi = []
+        for element in threeitems:
+            doiSet = article.objects.filter(vectorized=element).values('doi')
+            for i in doiSet:
+                getDoi.append(i['doi'])
+        doiList = getDoi
+        print(doiList)
+    else:
+        retrieve_new_articles(term)
+
+    # result = sorted(result, key=result.get, reverse=True)
+    # print(result)
+    # print(vectorA)
+    # print(cosine_similarity(vectorA, vectorB))
+
+    return vectorA
+
+
+def retrieve_new_articles(term):
+    retrieved = term
+    return retrieved

@@ -9,8 +9,10 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
+
+# nltk needs to be dowloaded during migration
+# nltk.download('punkt')
+# nltk.download('stopwords')
 
 
 class Migration(migrations.Migration):

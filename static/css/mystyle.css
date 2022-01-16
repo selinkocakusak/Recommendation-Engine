@@ -4,7 +4,17 @@ body{
     display: flex;
    
   }
-
+  .linkBtn,
+  .likeBtn,
+  .regBtn{
+    font-family: 'Montserrat',sans-serif;
+    background: grey;
+    height: 30px;
+    color: white;
+    cursor: pointer;
+  
+  
+  }
   header{
     font-family: 'Montserrat',sans-serif;
     position: fixed;

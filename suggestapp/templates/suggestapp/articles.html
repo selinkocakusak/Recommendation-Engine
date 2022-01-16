@@ -1,13 +1,29 @@
-{% autoescape off %}
-
+{% autoescape on %}
 
 
 Hi {{ email }},
 
+
 Please see suggested articles for you:
 
+{% for i in articles %}
+{{ i.title|upper }}
+
+{{ i.abstract }}
+
+http://{{ domain }}{% url 'suggestapp:article_view' uidb64=uidb64 no=i.no %}
+-------------------------------------------------------------------------------------------------------------------------------
+{% endfor %}
+
+You can manage your keywords with below link:
 
 http://{{ domain }}{% url 'suggestapp:manage' uidb64=uid token=token %}
 
+
+Unsubscribe:
+
 http://{{ domain }}{% url 'suggestapp:unsubscribe' uidb64=uid token=token %}
+
+
+
 {% endautoescape %}

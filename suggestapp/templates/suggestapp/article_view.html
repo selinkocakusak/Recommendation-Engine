@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+{% extends "suggestapp/index.html" %}
+{% block body_block %}
+{% csrf_token %}
+
+<div class="container">
+    {% for i in articles %}
+
+
+    <h3>{{ i.title }}</h3>
+    <h5>{{ i.doi }}</h5>
+    <h5>{{ i.authors }}</h5>
+    <h5>{{ i.date }}</h5>
+    <p> {{ i.abstract }}</p>
+    <button id="likeBtn" class="likeBtn" name="likeBtn">Like</button>
+    <br> <br>
+    <form action={{ i.link }}>
+        <input type="submit" id="linkBtn" class="linkBtn" name="linkBtn" value="Go to Link!">
+    </form>
+    {% endfor %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            $('#likeBtn').on("click", function () {
+                $.ajax({
+                    url: '',
+                    type: 'get',
+                    data: {
+
+                    },
+                    success: function (data) {
+
+                        $('#likeBtn').text('Liked');
+                        $('#likeBtn').css('background-color', 'green');
+                    }
+
+
+                });
+            });
+            $('#linkBtn').on("click", function () {
+                $.ajax({
+                    url: '',
+                    type: 'get',
+                    data: {
+
+                    },
+                    success: function (data) {
+                        $('#linkBtn').css('background-color', 'green');
+                    }
+
+
+                });
+            });
+        });
+
+    </script>
+</div>
+
+
+{% endblock %}
