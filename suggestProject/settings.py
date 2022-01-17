@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'suggestProject.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'suggestApp',
+        'NAME': 'sugges',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
         'HOST': 'db',

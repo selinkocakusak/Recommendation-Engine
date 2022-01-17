@@ -45,7 +45,7 @@ class reader_keyword(models.Model):
 
 class article(models.Model):
     no = models.AutoField(primary_key=True)
-    doi = models.CharField(unique=True, max_length=100)
+    doi = models.CharField(max_length=100)
     title = models.TextField(default='')
     authors = models.TextField(default='')
     abstract = models.TextField(default='')

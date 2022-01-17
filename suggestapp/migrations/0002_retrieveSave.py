@@ -11,8 +11,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import nltk
 
 # nltk needs to be dowloaded during migration
-# nltk.download('punkt')
-# nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('stopwords')
 
 
 class Migration(migrations.Migration):
