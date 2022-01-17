@@ -28,8 +28,8 @@ class keyword(models.Model):
                   ('Molecular Communication', 'Molecular Communication'),
                   ('Computer Science', 'Computer Science')]
     keyword_id = models.AutoField(primary_key=True)
-    keyword_name = models.CharField(
-        max_length=100, null=True, choices=MY_CHOICES)
+    keyword_name = models.CharField(unique=True,
+                                    max_length=100, null=True, choices=MY_CHOICES)
 
     def __str__(self):
         return str(self.keyword_id)

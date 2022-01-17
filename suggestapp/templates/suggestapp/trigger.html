@@ -4,19 +4,24 @@
 {% csrf_token %}
 
 <div class="container">
+    {% if readerList %}
     <label for="emails">Choose an email:</label>
-    <form method="POST">
-        {% csrf_token %}
-        {% if person %}
-        <select name="emails" id="emails">
-            <option name="{{ person }}" value="{{ person }}">{{ person }}</option>
 
+    <form method="POST" action="{% url 'suggestapp:trigger' %}">
+        {% csrf_token %}
+        <select name="emails" id="emails">
+            {% for i in readerList %}
+            <option value="{{i.email}}" class="email" name="{{i.email}}">{{i.email}}</option>
+            {% endfor %}
         </select>
         <br><br>
         <input type="submit" class="calculate" name="calculate" value="Calculate">
-
+        {% endif %}
+        {% if similarity %}
+        <h3>{{ similarity }}</h3>
+        {% endif %}
     </form>
-    {% endif %}
+
     <br><br>
 
     {% if compared %}

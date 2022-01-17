@@ -155,7 +155,7 @@ def return_articles(selectedKeywords, uid):
     querylist = []
     for element in selectedKeywords:
         query_returned = article.objects.filter(
-            term=element).values('term', 'abstract', 'title', 'no', 'doi')[0:4]
+            term=element).values('term', 'abstract', 'title', 'no', 'doi')[0:5]
         querylist.append(query_returned)
     returned_articles = list(chain(*querylist))
     return returned_articles
@@ -231,6 +231,7 @@ def article_view(request, no, uidb64):
     if request.is_ajax():
         for i in articles:
             like = "Liked"
+            print(i['doi'])
             reader_like.objects.filter(reader=email, doi=i['doi']).update(
                 reader=email, state=like,
                 term=i['term'], doi=i['doi'])
@@ -244,23 +245,27 @@ def article_view(request, no, uidb64):
 def trigger(request):
     current_site = get_current_site(request)
     readers = reader.objects.all().values('email')
-    for i in readers:
-        person = i['email']
-    keywords = reader_keyword.objects.filter(readers=person).values('keywords')
+    readerList = []
+    for element in readers:
+        readerList.append(element)
+    # for i in readerList:
+    #     readers = i
     if request.method == 'POST':
         email = request.POST.get('emails')
         compared = return_vectorized(email, current_site)
-        return render(request, 'suggestapp/trigger.html', {'person': person, 'compared': compared})
+        if type(compared) == str:
+            similarity = "The reader has not liked any articles yet."
+            return render(request, 'suggestapp/trigger.html', {'similarity': similarity})
+        else:
+            return render(request, 'suggestapp/trigger.html', {'readerList': readerList, 'compared': compared})
     else:
-        return render(request, 'suggestapp/trigger.html', {'person': person})
+        return render(request, 'suggestapp/trigger.html', {'readers': readers, 'readerList': readerList})
 
 
 def retrieve(request):
     if request.method == 'POST':
-        quantity = "20"
-        retrieving = "Still retrieving"
-        retrieved = retrieve_new_articles()
-        return render(request, 'suggestapp/trigger.html', )
+        retrieve_new_articles()
+        return render(request, 'suggestapp/retrieve.html', )
     else:
         return render(request, 'suggestapp/retrieve.html')
 
@@ -271,55 +276,60 @@ def return_vectorized(email, current_site):
     allLikes = []
     allTerm = []
     dictionary = {}
-    for elem in reader_like.objects.filter(
-            reader=email, state__in=['Liked']).values('doi', 'term'):
-        allLikes.append(elem['doi'])
-        allTerm.append(elem['term'])
-    dictionary['term'] = allTerm
-    vectorA = []
-    for item in article.objects.filter(doi__in=allLikes).values('vectorized'):
-        vectorA.append(item['vectorized'])
-    vectorA = ' '.join(vectorA)
+    try:
+        for elem in reader_like.objects.filter(
+                reader=email, state__in=['Liked']).values('doi', 'term'):
+            allLikes.append(elem['doi'])
+            allTerm.append(elem['term'])
+        dictionary['term'] = allTerm
+        vectorA = []
+        for item in article.objects.filter(doi__in=allLikes).values('vectorized'):
+            vectorA.append(item['vectorized'])
+        vectorA = ' '.join(vectorA)
     # In order not to send same articles to same emails, excludeList implemented.
-    excludeList = []
-    for element in reader_like.objects.filter(
-            reader=email, state__in=['Sent', 'Liked']).values('doi'):
-        excludeList.append(element['doi'])
-    vectorizer = TfidfVectorizer()
-    vectorA = vectorizer.fit_transform([vectorA])
-    other_articles = []
-    for term in allTerm:
-        for elem in article.objects.filter(term=term).exclude(doi__in=excludeList).values('vectorized'):
-            other_articles.append(elem['vectorized'])
-        result = {}
-        for item in other_articles:
-            vectorB = vectorizer.transform([item])
-            similarity = cosine_similarity(vectorA, vectorB)
-            clear = list(map(float, similarity))
-            similar = clear[0]
-            result[item] = similar
-        resultArticles = dict((k, v) for k, v in result.items()
-                              if v >= 0.4)
-    if len(resultArticles) > 5:
-        fiveitems = {A: N for (A, N) in [x for x in result.items()][:5]}
-        doiSet = []
-        for element in fiveitems:
-            doiSet.append(article.objects.filter(
-                vectorized=element).values('doi'))
-        doiList = []
-        for all in doiSet:
-            for elem in all:
-                doiList.append(elem['doi'])
-        articlesSend = article.objects.filter(doi__in=doiList).values(
-            'term', 'abstract', 'title', 'no', 'doi')
-        send_email(email, articlesSend, current_site, token)
-        for i in articlesSend:
-            send = "Sent"
-            sent = reader_like(reader=email, state=send,
-                               term=i['term'], doi=i['doi'])
-            sent.save()
-    else:
-        pass
+        excludeList = []
+        for element in reader_like.objects.filter(
+                reader=email, state__in=['Sent', 'Liked']).values('doi'):
+            excludeList.append(element['doi'])
+        vectorizer = TfidfVectorizer()
+        vectorA = vectorizer.fit_transform([vectorA])
+        other_articles = []
+        for term in allTerm:
+            for elem in article.objects.filter(term=term).exclude(doi__in=excludeList).values('vectorized'):
+                other_articles.append(elem['vectorized'])
+            result = {}
+            for item in other_articles:
+                vectorB = vectorizer.transform([item])
+                similarity = cosine_similarity(vectorA, vectorB)
+                clear = list(map(float, similarity))
+                similar = clear[0]
+                result[item] = similar
+            resultArticles = dict((k, v) for k, v in result.items()
+                                  if v >= 0.4)
+        if len(resultArticles) > 5:
+            fiveitems = {A: N for (A, N) in [x for x in result.items()][:5]}
+            doiSet = []
+            for element in fiveitems:
+                doiSet.append(article.objects.filter(
+                    vectorized=element).values('doi'))
+            doiList = []
+            for all in doiSet:
+                for elem in all:
+                    doiList.append(elem['doi'])
+            articlesSend = article.objects.filter(doi__in=doiList).values(
+                'term', 'abstract', 'title', 'no', 'doi')
+            send_email(email, articlesSend, current_site, token)
+            for i in articlesSend:
+                send = "Sent"
+                sent = reader_like(reader=email, state=send,
+                                   term=i['term'], doi=i['doi'])
+                sent.save()
+                similarity = similarity
+        else:
+            pass
+    except:
+        similarity = "The reader has not liked any articles."
+
     return similarity
 
 
@@ -426,7 +436,7 @@ def retrieve_new_articles():
                 pass
 
         except:
-            print("yes")
+            print("saved")
             articles_retrieved = article(doi=doiSave, title=title, authors=authors,
                                          abstract=abstract, term=keyword, date=date, link=link, vectorized=vectorized)
             articles_retrieved.save()
