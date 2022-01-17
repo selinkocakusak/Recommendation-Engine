@@ -52,15 +52,12 @@ def index(request):
             db.save()
             object = reader_keyword.objects.create(readers=email)
             for key in keywords:
-                print(key)
                 keyw = keyword.objects.get(keyword_name=key)
                 object.keywords.add(keyw)
             message = render_to_string('suggestapp/activation_request.html', {
                 'email': email,
                 'domain': current_site.domain,
                 'uid': urlsafe_base64_encode(force_bytes(email)),
-                # method will generate a hash value with user related data
-                # 'token': default_token_generator.make_token(email),
                 'token': token,
             })
 
@@ -107,7 +104,6 @@ def activate(request, uidb64, token):
                     selectedKeywords.append(a['keyword_name'])
             if (len(selectedKeywords)) != 0:
                 articlesSend = return_articles(selectedKeywords, uid)
-                print(articlesSend)
                 doiList = []
                 for i in articlesSend:
                     doiList.append(i['doi'])
@@ -143,10 +139,6 @@ def activate(request, uidb64, token):
     if readerCheck is None or tokenCheck is None:
         failure = "Token is invalid"
         return render(request, 'suggestapp/activation_done.html', {'failure': failure})
-    # except (TypeError, ValueError, OverflowError):
-    # if reader.objects.filter(confirmation=True):
-    #     failure = "You have already activated your account"
-    #     return render(request, 'suggestapp/activation_done.html', {'failure': failure})
     else:
         return render(request, 'suggestapp/activation_done.html')
 
@@ -200,7 +192,6 @@ def manage(request, uidb64, token):
         keyword_name=text).values('keyword_id')
     all = keyword.objects.all().values('keyword_name')
     if reader.objects.filter(email=uid).exists() and tokenCheck is not None:
-        print("yes")
         for one in keyw:
             tobedeleted = one['keyword_id']
             object = reader_keyword.objects.get(readers=uid)
@@ -231,7 +222,6 @@ def article_view(request, no, uidb64):
     if request.is_ajax():
         for i in articles:
             like = "Liked"
-            print(i['doi'])
             reader_like.objects.filter(reader=email, doi=i['doi']).update(
                 reader=email, state=like,
                 term=i['term'], doi=i['doi'])
@@ -248,8 +238,6 @@ def trigger(request):
     readerList = []
     for element in readers:
         readerList.append(element)
-    # for i in readerList:
-    #     readers = i
     if request.method == 'POST':
         email = request.POST.get('emails')
         compared = return_vectorized(email, current_site)
@@ -380,15 +368,12 @@ def retrieve_new_articles():
             doilist.append(doi)
             keywordList.append(item)
     dictionary = dict(zip(doilist, keywordList))
-    print(doilist)
     for doi in dictionary:
         keyword = dictionary[doi]
     dois = []
     for i in article.objects.filter(doi=doi).values('doi'):
         dois.append(i['doi'])
     new_list = [a for a in doilist if (a not in dois)]
-    # print(new_list)
-    # for item in article.objects.filter(doi__in=doilist).exclude(doi__in=dois).values:
     for doi in new_list:
         url = ("https://api.elsevier.com/content/article/doi/"+doi+"?apiKey="+apiKey+"&httpAccept=application/json"
                )
