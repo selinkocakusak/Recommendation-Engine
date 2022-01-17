@@ -11,8 +11,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import nltk
 
 # nltk needs to be dowloaded during migration
-# nltk.download('punkt')
-# nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('stopwords')
 
 
 class Migration(migrations.Migration):
@@ -22,14 +22,14 @@ class Migration(migrations.Migration):
     ]
 
     def insert_default_articles(apps, schema_editor):
-        apiKey = "0030269e63c084891d5a7e14e5565770"
+        apiKey = ""
         list = ['Algorithms', "Artificial Intelligence",
                 "Networking", "Wireless Communication", "Data Science", "Molecular Communication", "Computer Science"]
         keywordList = []
         doilist = []
         for item in list:
             url = ("https://api.elsevier.com/content/search/sciencedirect?query=" +
-                   item+"&apiKey=7f59af901d2d86f78a1fd60c1bf9426a&count=100")
+                   item+"&apiKey=&count=100")
             response = requests.request("GET", url)
             result = json.loads(response.text.encode(
                 'utf-8'))
