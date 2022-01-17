@@ -35,6 +35,7 @@ nltk.download('stopwords')
 
 
 def index(request):
+    # Index gets the data of reader, saves the database, sends to activation.
     if request.method == 'POST':
         email = request.POST.get('email')
         activation = 'Activation Link Sent'
@@ -80,6 +81,7 @@ def activation_sent_view(request):
 
 
 def activate(request, uidb64, token):
+    # This checks if activation token is valid. After the activation, new articles are send, and saved to database.
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
         readerCheck = reader.objects.get(email=uid)
@@ -144,6 +146,7 @@ def activate(request, uidb64, token):
 
 
 def return_articles(selectedKeywords, uid):
+    # Only return articles for the mails after activation.
     querylist = []
     for element in selectedKeywords:
         query_returned = article.objects.filter(
@@ -154,6 +157,7 @@ def return_articles(selectedKeywords, uid):
 
 
 def unsubscribe(request, uidb64, token):
+    # Unsubscibe is happening as updating the state of the reader.
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
         tokenCheck = reader.objects.get(token=token)
@@ -173,6 +177,7 @@ def unsubscribe(request, uidb64, token):
 
 
 def manage(request, uidb64, token):
+    # Checks tokens, updates the keywords selected before. It is achieved with Ajax.
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
         tokenCheck = reader.objects.get(token=token)
@@ -214,6 +219,7 @@ def manage(request, uidb64, token):
 
 
 def article_view(request, no, uidb64):
+    # It helps to see articles and Ajax is used.
     email = force_text(urlsafe_base64_decode(uidb64))
 # Article on UI
     articles = article.objects.filter(
@@ -259,6 +265,7 @@ def retrieve(request):
 
 
 def return_vectorized(email, current_site):
+    # It uses NLTK, TF-IDF and calculates the similarities.
     for i in reader.objects.filter(email=email).values('token'):
         token = i['token']
     allLikes = []
