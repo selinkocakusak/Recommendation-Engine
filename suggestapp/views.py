@@ -246,10 +246,7 @@ def trigger(request):
     readers = reader.objects.all().values('email')
     for i in readers:
         person = i['email']
-    # keywords = reader_keyword.objects.filter(readers=person).values('keywords')
-    # if request.method == 'GET':
-    #     quantity = "20"
-    #     retrieved = retrieve_new_articles(quantity)
+    keywords = reader_keyword.objects.filter(readers=person).values('keywords')
     if request.method == 'POST':
         email = request.POST.get('emails')
         compared = return_vectorized(email, current_site)
