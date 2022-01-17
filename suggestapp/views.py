@@ -1,8 +1,10 @@
 
+from .forms import readerForm
+from datetime import datetime
 from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import render
 import re
-from .models import article, keyword, reader_keyword, reader
+from .models import article, keyword, reader_keyword, reader, reader_like
 import hashlib
 from django.core.mail import EmailMessage
 from django.conf import settings
@@ -21,9 +23,15 @@ from itertools import chain
 from django.http import JsonResponse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-
-from .forms import readerForm
+import requests
+import json
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
 
 
 def index(request):
@@ -99,6 +107,17 @@ def activate(request, uidb64, token):
                     selectedKeywords.append(a['keyword_name'])
             if (len(selectedKeywords)) != 0:
                 articlesSend = return_articles(selectedKeywords, uid)
+                print(articlesSend)
+                doiList = []
+                for i in articlesSend:
+                    doiList.append(i['doi'])
+                term = article.objects.filter(
+                    doi__in=doiList).values('term', 'doi')
+                for elem in term:
+                    send = "Sent"
+                    sent = reader_like(reader=uid, state=send,
+                                       term=elem['term'], doi=elem['doi'])
+                    sent.save()
                 message = render_to_string('suggestapp/articles.html', {
                     'email': uid,
                     'uidb64': uidb64,
@@ -115,6 +134,7 @@ def activate(request, uidb64, token):
                 )
                 mailSend.fail_silently = False
                 mailSend.send()
+
             else:
                 pass
 
@@ -135,7 +155,7 @@ def return_articles(selectedKeywords, uid):
     querylist = []
     for element in selectedKeywords:
         query_returned = article.objects.filter(
-            term=element).values('term', 'abstract', 'title', 'no')[0:4]
+            term=element).values('term', 'abstract', 'title', 'no', 'doi')[0:4]
         querylist.append(query_returned)
     returned_articles = list(chain(*querylist))
     return returned_articles
@@ -203,56 +223,215 @@ def manage(request, uidb64, token):
 
 
 def article_view(request, no, uidb64):
+    email = force_text(urlsafe_base64_decode(uidb64))
+# Article on UI
     articles = article.objects.filter(
         no=no).values()
+# If the article is liked or directed to link
     if request.is_ajax():
-        for elem in articles.values('term'):
-            term = elem['term']
-        for item in articles.values('vectorized'):
-            liked = item['vectorized']
-        compared = return_vectorized(liked, term)
+        for i in articles:
+            like = "Liked"
+            reader_like.objects.filter(reader=email, doi=i['doi']).update(
+                reader=email, state=like,
+                term=i['term'], doi=i['doi'])
         context = {
-
         }
         return JsonResponse(data=context)
+
     return render(request, 'suggestapp/article_view.html', {'articles': articles})
 
 
-def return_vectorized(liked, term):
-    other_articles = []
-    for elem in article.objects.filter(term=term).values('vectorized'):
-        other_articles.append(elem['vectorized'])
-    vectorizer = TfidfVectorizer()
-    vectorA = vectorizer.fit_transform([liked])
-    result = {}
-    for item in other_articles:
-        vectorB = vectorizer.transform([item])
-        similar = cosine_similarity(vectorA, vectorB)
-        clear = list(map(float, similar))
-        similar = clear[0]
-        result[item] = similar
-    result = dict((k, v) for k, v in result.items()
-                  if v >= 0.5)
-    if len(result) > 3:
-        threeitems = {A: N for (A, N) in [x for x in result.items()][:3]}
-        getDoi = []
-        for element in threeitems:
-            doiSet = article.objects.filter(vectorized=element).values('doi')
-            for i in doiSet:
-                getDoi.append(i['doi'])
-        doiList = getDoi
-        print(doiList)
+def trigger(request):
+    current_site = get_current_site(request)
+    readers = reader.objects.all().values('email')
+    for i in readers:
+        person = i['email']
+    # keywords = reader_keyword.objects.filter(readers=person).values('keywords')
+    # if request.method == 'GET':
+    #     quantity = "20"
+    #     retrieved = retrieve_new_articles(quantity)
+    if request.method == 'POST':
+        email = request.POST.get('emails')
+        compared = return_vectorized(email, current_site)
+        return render(request, 'suggestapp/trigger.html', {'person': person, 'compared': compared})
     else:
-        retrieve_new_articles(term)
-
-    # result = sorted(result, key=result.get, reverse=True)
-    # print(result)
-    # print(vectorA)
-    # print(cosine_similarity(vectorA, vectorB))
-
-    return vectorA
+        return render(request, 'suggestapp/trigger.html', {'person': person})
 
 
-def retrieve_new_articles(term):
-    retrieved = term
-    return retrieved
+def retrieve(request):
+    if request.method == 'POST':
+        quantity = "20"
+        retrieving = "Still retrieving"
+        retrieved = retrieve_new_articles()
+        return render(request, 'suggestapp/trigger.html', )
+    else:
+        return render(request, 'suggestapp/retrieve.html')
+
+
+def return_vectorized(email, current_site):
+    for i in reader.objects.filter(email=email).values('token'):
+        token = i['token']
+    allLikes = []
+    allTerm = []
+    dictionary = {}
+    for elem in reader_like.objects.filter(
+            reader=email, state__in=['Liked']).values('doi', 'term'):
+        allLikes.append(elem['doi'])
+        allTerm.append(elem['term'])
+    dictionary['term'] = allTerm
+    vectorA = []
+    for item in article.objects.filter(doi__in=allLikes).values('vectorized'):
+        vectorA.append(item['vectorized'])
+    vectorA = ' '.join(vectorA)
+    # In order not to send same articles to same emails, excludeList implemented.
+    excludeList = []
+    for element in reader_like.objects.filter(
+            reader=email, state__in=['Sent', 'Liked']).values('doi'):
+        excludeList.append(element['doi'])
+    vectorizer = TfidfVectorizer()
+    vectorA = vectorizer.fit_transform([vectorA])
+    other_articles = []
+    for term in allTerm:
+        for elem in article.objects.filter(term=term).exclude(doi__in=excludeList).values('vectorized'):
+            other_articles.append(elem['vectorized'])
+        result = {}
+        for item in other_articles:
+            vectorB = vectorizer.transform([item])
+            similarity = cosine_similarity(vectorA, vectorB)
+            clear = list(map(float, similarity))
+            similar = clear[0]
+            result[item] = similar
+        resultArticles = dict((k, v) for k, v in result.items()
+                              if v >= 0.4)
+    if len(resultArticles) > 5:
+        fiveitems = {A: N for (A, N) in [x for x in result.items()][:5]}
+        doiSet = []
+        for element in fiveitems:
+            doiSet.append(article.objects.filter(
+                vectorized=element).values('doi'))
+        doiList = []
+        for all in doiSet:
+            for elem in all:
+                doiList.append(elem['doi'])
+        articlesSend = article.objects.filter(doi__in=doiList).values(
+            'term', 'abstract', 'title', 'no', 'doi')
+        send_email(email, articlesSend, current_site, token)
+        for i in articlesSend:
+            send = "Sent"
+            sent = reader_like(reader=email, state=send,
+                               term=i['term'], doi=i['doi'])
+            sent.save()
+    else:
+        pass
+    return similarity
+
+
+def send_email(email, articlesSend, current_site, token):
+    uid = urlsafe_base64_encode(force_bytes(email))
+    message = render_to_string('suggestapp/articles_after.html', {
+        'email': email,
+        'uidb64': uid,
+        'domain': current_site.domain,
+        'uid': urlsafe_base64_encode(force_bytes(email)),
+        'token': token,
+        'articles': articlesSend
+    })
+    mailSend = EmailMessage(
+        'New Articles for you!',
+        message,
+        settings.EMAIL_HOST_USER,
+        [email],
+    )
+    mailSend.fail_silently = False
+    mailSend.send()
+    return articlesSend
+
+
+def retrieve_new_articles():
+
+    list = ['Algorithms', "Artificial Intelligence",
+            "Networking", "Wireless Communication", "Data Science", "Molecular Communication", "Computer Science"]
+    apiKey = "0030269e63c084891d5a7e14e5565770"
+    keywordList = []
+    doilist = []
+    for item in list:
+        url = ("https://api.elsevier.com/content/search/sciencedirect?query=" +
+               item+"&apiKey=7f59af901d2d86f78a1fd60c1bf9426a&count=5&date=2022")
+        response = requests.request("GET", url)
+        result = json.loads(response.text.encode(
+            'utf-8'))
+        if 'search-results' in result:
+            result = result['search-results']
+            if 'entry' in result:
+                result = result['entry']
+            else:
+                pass
+        else:
+            pass
+        for i in result:
+            doi = i['prism:doi']
+            doilist.append(doi)
+            keywordList.append(item)
+    dictionary = dict(zip(doilist, keywordList))
+    print(doilist)
+    for doi in dictionary:
+        keyword = dictionary[doi]
+    dois = []
+    for i in article.objects.filter(doi=doi).values('doi'):
+        dois.append(i['doi'])
+    new_list = [a for a in doilist if (a not in dois)]
+    # print(new_list)
+    # for item in article.objects.filter(doi__in=doilist).exclude(doi__in=dois).values:
+    for doi in new_list:
+        url = ("https://api.elsevier.com/content/article/doi/"+doi+"?apiKey="+apiKey+"&httpAccept=application/json"
+               )
+        response = requests.request("GET", url)
+        result = json.loads(response.text.encode(
+            'utf-8'))['full-text-retrieval-response']['coredata']
+        if result['dc:description'] != None:
+            abstract = result['dc:description']
+            lowerCase = abstract.lower()
+            text_tokens = word_tokenize(lowerCase)
+            stops = set(stopwords.words('english'))
+            tokens_without_sw = [
+                word for word in text_tokens if not word in stops]
+            noStop = ' '.join(tokens_without_sw)
+            tokenizer = nltk.RegexpTokenizer(r"\w+")
+            new_words = tokenizer.tokenize(noStop)
+            wordsFiltered = " ".join(new_words)
+            vectorizer = TfidfVectorizer()
+            vectors = vectorizer.fit_transform([wordsFiltered])
+            feature_names = vectorizer.get_feature_names()
+            dense = vectors.todense()
+            denselist = dense.tolist()
+            for part in denselist:
+                dense = part
+            tfidResults = {feature_names[part]: dense[part]
+                           for part in range(len(feature_names))}
+            vectorized = " ".join(tfidResults)
+            author = []
+            if result['dc:creator'] == None:
+                pass
+            else:
+                res = result['dc:creator']
+                if type(res) == dict:
+                    authors = result['dc:creator']['$']
+                else:
+                    for auth in result['dc:creator']:
+                        author.append(auth['$'])
+                        authors = (',').join(author)
+            doiSave = result['prism:doi']
+            date = result['prism:coverDate']
+            link = result['link'][1]['@href']
+            title = result['dc:title']
+        try:
+            if article.objects.get(doi=doiSave) != None:
+                pass
+
+        except:
+            print("yes")
+            articles_retrieved = article(doi=doiSave, title=title, authors=authors,
+                                         abstract=abstract, term=keyword, date=date, link=link, vectorized=vectorized)
+            articles_retrieved.save()
+
+    return new_list

@@ -8,6 +8,8 @@ app_name = 'suggestapp'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('trigger/', views.trigger, name='trigger'),
+    path('retrieve/', views.retrieve, name='retrieve'),
     path('article_view/<slug:uidb64>/<int:no>/',
          views.article_view, name='article_view'),
     path('manage/<slug:uidb64>/<slug:token>/',

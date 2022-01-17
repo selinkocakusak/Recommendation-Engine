@@ -3,6 +3,7 @@
 
 Hi {{ email }},
 
+You have successfully activated your account!
 
 Please see suggested articles for you:
 
@@ -10,6 +11,7 @@ Please see suggested articles for you:
 {{ i.title|upper }}
 
 {{ i.abstract }}
+
 
 http://{{ domain }}{% url 'suggestapp:article_view' uidb64=uidb64 no=i.no %}
 -------------------------------------------------------------------------------------------------------------------------------

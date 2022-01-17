@@ -45,7 +45,7 @@ class reader_keyword(models.Model):
 
 class article(models.Model):
     no = models.AutoField(primary_key=True)
-    doi = models.CharField(max_length=50)
+    doi = models.CharField(unique=True, max_length=100)
     title = models.TextField(default='')
     authors = models.TextField(default='')
     abstract = models.TextField(default='')
@@ -56,3 +56,14 @@ class article(models.Model):
 
     def __str__(self):
         return str(self.no)
+
+
+class reader_like(models.Model):
+    reader = models.EmailField(max_length=150)
+    doi = models.CharField(max_length=50)
+    term = models.TextField()
+    date = models.DateField(default=datetime.now)
+    state = models.CharField(max_length=150)
+
+    def __str__(self):
+        return str(self.reader)
